@@ -20,6 +20,16 @@ function isUIMessageArray(value: unknown): value is UIMessage[] {
   );
 }
 
+function sanitizeForStorage(messages: UIMessage[]): UIMessage[] {
+  return messages.map(message => ({
+    id: message.id,
+    role: message.role,
+    parts: message.parts
+      .filter(part => part.type === 'text')
+      .map(part => ({ type: 'text' as const, text: part.text })),
+  }));
+}
+
 export default function Home() {
   const [input, setInput] = useState('');
   const { messages, sendMessage, setMessages } = useChat();
@@ -42,7 +52,10 @@ export default function Home() {
   // Persist messages on any change (simple MVP persistence).
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(sanitizeForStorage(messages)),
+      );
     } catch {
       // Ignore quota and serialization errors.
     }
