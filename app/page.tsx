@@ -32,7 +32,7 @@ function sanitizeForStorage(messages: UIMessage[]): UIMessage[] {
 
 export default function Home() {
   const [input, setInput] = useState('');
-  const { messages, sendMessage, setMessages } = useChat();
+  const { messages, sendMessage, setMessages, status } = useChat();
 
   // Load messages from localStorage after mount.
   useEffect(() => {
@@ -49,8 +49,10 @@ export default function Home() {
     }
   }, [setMessages]);
 
-  // Persist messages on any change (simple MVP persistence).
+  // Persist messages only at checkpoints (after sending and once complete),
+  // skipping per-token writes during streaming.
   useEffect(() => {
+    if (messages.length === 0 || status === 'streaming') return;
     try {
       localStorage.setItem(
         STORAGE_KEY,
@@ -59,7 +61,7 @@ export default function Home() {
     } catch {
       // Ignore quota and serialization errors.
     }
-  }, [messages]);
+  }, [messages, status]);
 
   const renderedMessages = useMemo(
     () =>
